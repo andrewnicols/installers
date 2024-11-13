@@ -2,6 +2,10 @@
 
 namespace Composer\Installers;
 
+use Composer\IO\IOInterface;
+use Composer\Composer;
+use Composer\Package\PackageInterface;
+
 class MoodleInstaller extends BaseInstaller
 {
     /** @var array<string, string> */
@@ -70,4 +74,64 @@ class MoodleInstaller extends BaseInstaller
         'workshopeval'       => 'mod/workshop/eval/{$name}/',
         'workshopform'       => 'mod/workshop/form/{$name}/'
     );
+
+    /**
+     * Initializes base installer.
+     */
+    public function __construct(PackageInterface $package = null, Composer $composer = null, IOInterface $io = null)
+    {
+        parent::__construct($package, $composer, $io);
+
+        $componentsfile = getcwd() . '/lib/components.json';
+        if (!file_exists($componentsfile)) {
+            // Must be a very old version of Moodle.
+            // Fall back on the default install path list.
+            return;
+        }
+
+        $locations = [];
+
+        // Moodle maintains a list of plugin types and their location in a
+        // components.json file.
+        // This is the authoritative list and should be used wherever possible.
+        $components = json_decode(file_get_contents($componentsfile), true);
+        $locations = array_map(
+            function(string $path) {
+                return $path . '/{$name}';
+            },
+            $components['plugintypes']
+        );
+
+        // This could be a subplugin.
+        // Plugins can define subplugins in a db/subplugins.json file.
+        foreach (array_values($components['plugintypes']) as $path) {
+            $iterator = new \DirectoryIterator($path);
+            foreach ($iterator as $plugin) {
+                $subpluginFile = $plugin->getPathname() . '/db/subplugins.json';
+                if ($plugin->isDir() && is_file($subpluginFile)) {
+                    $subplugins = json_decode(file_get_contents($subpluginFile), true);
+
+                    if (array_key_exists('subplugintypes', $subplugins)) {
+                        // In Moodle 5.0, subplugins are defined in a
+                        // 'subplugintypes' array.
+                        // This value is relative to the plugin directory.
+                        $subpluginTypes = $subplugins['subplugintypes'];
+                        foreach ($subpluginTypes as $pluginType => $subpluginPath) {
+                            $locations[$pluginType] = $plugin->getPathname() . '/' . $subpluginPath . '/{$name}';
+                        }
+                    } else if (array_key_exists('plugintypes', $subplugins)) {
+                        // Before Moodle 5.0, subplugins are defined
+                        // in a 'plugintypes' array.
+                        // This value is relative to the project root.
+                        $subpluginTypes = $subplugins['plugintypes'];
+                        foreach ($subpluginTypes as $pluginType => $subpluginPath) {
+                            $locations[$pluginType] = $subpluginPath. '/{$name}';
+                        }
+                    }
+                }
+            }
+        }
+
+        $this->locations = $locations;
+    }
 }
