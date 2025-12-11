@@ -8,6 +8,8 @@ use Composer\Package\PackageInterface;
 
 class MoodleInstaller extends BaseInstaller
 {
+    private ?PackageInterface $moodlePackage = null;
+
     /**
      * Initializes base installer.
      */
@@ -15,6 +17,13 @@ class MoodleInstaller extends BaseInstaller
     {
         xdebug_break();
         parent::__construct($package, $composer, $io);
+
+        // Find the Moodle Package.
+        $this->moodlePackage = $composer->getRepositoryManager()->findPackage('moodle/moodle', '*');
+
+        $this->_loadLegacyList();
+        return;
+
 
         $configurations = [
             [
@@ -132,6 +141,10 @@ class MoodleInstaller extends BaseInstaller
             return $vars;
         }
 
+        $moodleExtra = $this->moodlePackage ? $this->moodlePackage->getExtra() : [];
+
+        $vars['public'] = !empty($moodleExtra['publicdir']) ? 'moodle/public/' : '';
+
         $matches = [];
         preg_match('/^moodle-(?<type>([^_]*))_(?<name>(.*))$/', $vars['name'], $matches);
 
@@ -146,69 +159,69 @@ class MoodleInstaller extends BaseInstaller
     private function _loadLegacyList(): void {
         $this->locations = [
             'core'               => 'moodle/',
-            'mod'                => 'mod/{$name}/',
-            'admin_report'       => 'admin/report/{$name}/',
-            'atto'               => 'lib/editor/atto/plugins/{$name}/',
-            'tool'               => 'admin/tool/{$name}/',
-            'assignment'         => 'mod/assignment/type/{$name}/',
-            'assignsubmission'   => 'mod/assign/submission/{$name}/',
-            'assignfeedback'     => 'mod/assign/feedback/{$name}/',
-            'antivirus'          => 'lib/antivirus/{$name}/',
-            'auth'               => 'auth/{$name}/',
-            'availability'       => 'availability/condition/{$name}/',
-            'block'              => 'blocks/{$name}/',
-            'booktool'           => 'mod/book/tool/{$name}/',
-            'cachestore'         => 'cache/stores/{$name}/',
-            'cachelock'          => 'cache/locks/{$name}/',
-            'calendartype'       => 'calendar/type/{$name}/',
-            'communication'      => 'communication/provider/{$name}/',
-            'customfield'        => 'customfield/field/{$name}/',
-            'fileconverter'      => 'files/converter/{$name}/',
-            'format'             => 'course/format/{$name}/',
-            'coursereport'       => 'course/report/{$name}/',
-            'contenttype'        => 'contentbank/contenttype/{$name}/',
-            'customcertelement'  => 'mod/customcert/element/{$name}/',
-            'datafield'          => 'mod/data/field/{$name}/',
-            'dataformat'         => 'dataformat/{$name}/',
-            'datapreset'         => 'mod/data/preset/{$name}/',
-            'editor'             => 'lib/editor/{$name}/',
-            'enrol'              => 'enrol/{$name}/',
-            'filter'             => 'filter/{$name}/',
-            'forumreport'        => 'mod/forum/report/{$name}/',
-            'gradeexport'        => 'grade/export/{$name}/',
-            'gradeimport'        => 'grade/import/{$name}/',
-            'gradereport'        => 'grade/report/{$name}/',
-            'gradingform'        => 'grade/grading/form/{$name}/',
-            'h5plib'             => 'h5p/h5plib/{$name}/',
-            'local'              => 'local/{$name}/',
-            'logstore'           => 'admin/tool/log/store/{$name}/',
-            'ltisource'          => 'mod/lti/source/{$name}/',
-            'ltiservice'         => 'mod/lti/service/{$name}/',
-            'media'              => 'media/player/{$name}/',
-            'message'            => 'message/output/{$name}/',
-            'mlbackend'          => 'lib/mlbackend/{$name}/',
-            'mnetservice'        => 'mnet/service/{$name}/',
-            'paygw'              => 'payment/gateway/{$name}/',
-            'plagiarism'         => 'plagiarism/{$name}/',
-            'portfolio'          => 'portfolio/{$name}/',
-            'qbank'              => 'question/bank/{$name}/',
-            'qbehaviour'         => 'question/behaviour/{$name}/',
-            'qformat'            => 'question/format/{$name}/',
-            'qtype'              => 'question/type/{$name}/',
-            'quizaccess'         => 'mod/quiz/accessrule/{$name}/',
-            'quiz'               => 'mod/quiz/report/{$name}/',
-            'report'             => 'report/{$name}/',
-            'repository'         => 'repository/{$name}/',
-            'scormreport'        => 'mod/scorm/report/{$name}/',
-            'search'             => 'search/engine/{$name}/',
-            'theme'              => 'theme/{$name}/',
-            'tiny'               => 'lib/editor/tiny/plugins/{$name}/',
-            'tinymce'            => 'lib/editor/tinymce/plugins/{$name}/',
-            'profilefield'       => 'user/profile/field/{$name}/',
-            'webservice'         => 'webservice/{$name}/',
-            'workshopallocation' => 'mod/workshop/allocation/{$name}/',
-            'workshopeval'       => 'mod/workshop/eval/{$name}/',
-            'workshopform'       => 'mod/workshop/form/{$name}/'
+            'mod'                => '{$public}mod/{$name}/',
+            'admin_report'       => '{$public}admin/report/{$name}/',
+            'atto'               => '{$public}lib/editor/atto/plugins/{$name}/',
+            'tool'               => '{$public}admin/tool/{$name}/',
+            'assignment'         => '{$public}mod/assignment/type/{$name}/',
+            'assignsubmission'   => '{$public}mod/assign/submission/{$name}/',
+            'assignfeedback'     => '{$public}mod/assign/feedback/{$name}/',
+            'antivirus'          => '{$public}lib/antivirus/{$name}/',
+            'auth'               => '{$public}auth/{$name}/',
+            'availability'       => '{$public}availability/condition/{$name}/',
+            'block'              => '{$public}blocks/{$name}/',
+            'booktool'           => '{$public}mod/book/tool/{$name}/',
+            'cachestore'         => '{$public}cache/stores/{$name}/',
+            'cachelock'          => '{$public}cache/locks/{$name}/',
+            'calendartype'       => '{$public}calendar/type/{$name}/',
+            'communication'      => '{$public}communication/provider/{$name}/',
+            'customfield'        => '{$public}customfield/field/{$name}/',
+            'fileconverter'      => '{$public}files/converter/{$name}/',
+            'format'             => '{$public}course/format/{$name}/',
+            'coursereport'       => '{$public}course/report/{$name}/',
+            'contenttype'        => '{$public}contentbank/contenttype/{$name}/',
+            'customcertelement'  => '{$public}mod/customcert/element/{$name}/',
+            'datafield'          => '{$public}mod/data/field/{$name}/',
+            'dataformat'         => '{$public}dataformat/{$name}/',
+            'datapreset'         => '{$public}mod/data/preset/{$name}/',
+            'editor'             => '{$public}lib/editor/{$name}/',
+            'enrol'              => '{$public}enrol/{$name}/',
+            'filter'             => '{$public}filter/{$name}/',
+            'forumreport'        => '{$public}mod/forum/report/{$name}/',
+            'gradeexport'        => '{$public}grade/export/{$name}/',
+            'gradeimport'        => '{$public}grade/import/{$name}/',
+            'gradereport'        => '{$public}grade/report/{$name}/',
+            'gradingform'        => '{$public}grade/grading/form/{$name}/',
+            'h5plib'             => '{$public}h5p/h5plib/{$name}/',
+            'local'              => '{$public}local/{$name}/',
+            'logstore'           => '{$public}admin/tool/log/store/{$name}/',
+            'ltisource'          => '{$public}mod/lti/source/{$name}/',
+            'ltiservice'         => '{$public}mod/lti/service/{$name}/',
+            'media'              => '{$public}media/player/{$name}/',
+            'message'            => '{$public}message/output/{$name}/',
+            'mlbackend'          => '{$public}lib/mlbackend/{$name}/',
+            'mnetservice'        => '{$public}mnet/service/{$name}/',
+            'paygw'              => '{$public}payment/gateway/{$name}/',
+            'plagiarism'         => '{$public}plagiarism/{$name}/',
+            'portfolio'          => '{$public}portfolio/{$name}/',
+            'qbank'              => '{$public}question/bank/{$name}/',
+            'qbehaviour'         => '{$public}question/behaviour/{$name}/',
+            'qformat'            => '{$public}question/format/{$name}/',
+            'qtype'              => '{$public}question/type/{$name}/',
+            'quizaccess'         => '{$public}mod/quiz/accessrule/{$name}/',
+            'quiz'               => '{$public}mod/quiz/report/{$name}/',
+            'report'             => '{$public}report/{$name}/',
+            'repository'         => '{$public}repository/{$name}/',
+            'scormreport'        => '{$public}mod/scorm/report/{$name}/',
+            'search'             => '{$public}search/engine/{$name}/',
+            'theme'              => '{$public}theme/{$name}/',
+            'tiny'               => '{$public}lib/editor/tiny/plugins/{$name}/',
+            'tinymce'            => '{$public}lib/editor/tinymce/plugins/{$name}/',
+            'profilefield'       => '{$public}user/profile/field/{$name}/',
+            'webservice'         => '{$public}webservice/{$name}/',
+            'workshopallocation' => '{$public}mod/workshop/allocation/{$name}/',
+            'workshopeval'       => '{$public}mod/workshop/eval/{$name}/',
+            'workshopform'       => '{$public}mod/workshop/form/{$name}/'
         ];
     }
 }
