@@ -13,6 +13,7 @@ class MoodleInstaller extends BaseInstaller
      */
     public function __construct(PackageInterface $package = null, Composer $composer = null, IOInterface $io = null)
     {
+        xdebug_break();
         parent::__construct($package, $composer, $io);
 
         $configurations = [
