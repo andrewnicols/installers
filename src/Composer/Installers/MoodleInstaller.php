@@ -143,7 +143,7 @@ class MoodleInstaller extends BaseInstaller
 
         $moodleExtra = $this->moodlePackage ? $this->moodlePackage->getExtra() : [];
 
-        $vars['public'] = !empty($moodleExtra['publicdir']) ? 'moodle/public/' : '';
+        $vars['public'] = !empty($moodleExtra['moodle-public']) ? 'moodle/public/' : '';
 
         $matches = [];
         preg_match('/^moodle-(?<type>([^_]*))_(?<name>(.*))$/', $vars['name'], $matches);
